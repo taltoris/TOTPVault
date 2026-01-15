@@ -1,0 +1,14 @@
+services:
+  totp:
+    build: .
+    container_name: totpVault
+    ports:
+      - "5002:5000"
+    volumes:
+      - ./data:/data
+      - ./app.py:/app/app.py
+      - ./templates:/app/templates
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+      - FLASK_ENV=development

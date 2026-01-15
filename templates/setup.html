@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h1>🔐 Setup Authenticator</h1>
+    <p style="text-align: center; color: #666; margin-bottom: 30px;">
+        Create your master password to secure your TOTP secrets
+    </p>
+    <form id="setupForm">
+        <div class="form-group">
+            <label>Master Password</label>
+            <input type="password" id="password" required minlength="8" placeholder="Minimum 8 characters">
+        </div>
+        <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="confirmPassword" required minlength="8">
+        </div>
+        <button type="submit">Create Account</button>
+        <div id="message" class="error"></div>
+    </form>
+</div>
+<script>
+document.getElementById('setupForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const pwd = document.getElementById('password').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    const msg = document.getElementById('message');
+    
+    if (pwd !== confirm) {
+        msg.textContent = 'Passwords do not match';
+        return;
+    }
+    
+    const res = await fetch('/api/setup', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({password: pwd})
+    });
+    
+    if (res.ok) {
+        window.location.href = '/';
+    } else {
+        const data = await res.json();
+        msg.textContent = data.error;
+    }
+};
+</script>
+{% endblock %}

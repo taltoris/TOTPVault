@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="header-actions">
+        <h1 style="margin: 0;">🔐 Authenticator</h1>
+        <button class="secondary" onclick="logout()" style="width: auto; padding: 8px 20px;">Logout</button>
+    </div>
+    
+    <div class="form-group">
+        <label>Select Service</label>
+        <select id="serviceSelect">
+            <option value="">-- Select a service --</option>
+        </select>
+    </div>
+    
+    <button onclick="generateCode()" id="generateBtn" disabled>Generate Code</button>
+    
+    <div id="totpDisplay" class="totp-display" style="display: none;">
+        <div class="totp-code" id="totpCode">------</div>
+        <div class="totp-timer" id="totpTimer">Expires in: --s</div>
+    </div>
+    
+    <div class="add-form">
+        <h3 style="margin-bottom: 15px;">Add New Service</h3>
+        <div class="form-group">
+            <label>Service Name</label>
+            <input type="text" id="newService" placeholder="e.g., GitHub, Gmail">
+        </div>
+        <div class="form-group">
+            <label>Secret Key</label>
+            <input type="text" id="newSecret" placeholder="Base32 encoded secret">
+        </div>
+        <button onclick="addService()">Add Service</button>
+        <div id="addMessage"></div>
+    </div>
+    
+    <div id="servicesList" style="margin-top: 30px;"></div>
+</div>
+
+<script>
+let currentInterval = null;
+
+async function loadServices() {
+    const res = await fetch('/api/secrets');
+    const data = await res.json();
+    const select = document.getElementById('serviceSelect');
+    const list = document.getElementById('servicesList');
+    
+    select.innerHTML = '<option value="">-- Select a service --</option>';
+    list.innerHTML = '';
+    
+    data.secrets.forEach(service => {
+        const opt = document.createElement('option');
+        opt.value = service;
+        opt.textContent = service;
+        select.appendChild(opt);
+        
+        const item = document.createElement('div');
+        item.className = 'service-item';
+        item.innerHTML = `
+            <span class="service-name">${service}</span>
+            <button class="delete" onclick="deleteService('${service}')">Delete</button>
+        `;
+        list.appendChild(item);
+    });
+    
+    document.getElementById('generateBtn').disabled = data.secrets.length === 0;
+}
+
+document.getElementById('serviceSelect').onchange = (e) => {
+    document.getElementById('generateBtn').disabled = !e.target.value;
+};
+
+async function generateCode() {
+    const service = document.getElementById('serviceSelect').value;
+    if (!service) return;
+    
+    if (currentInterval) clearInterval(currentInterval);
+    
+    const display = document.getElementById('totpDisplay');
+    display.style.display = 'block';
+    
+    let lastCode = null;
+    
+    async function updateCode() {
+        try {
+            const res = await fetch(`/api/totp/${encodeURIComponent(service)}`);
+            if (!res.ok) {
+                console.error('Failed to fetch TOTP');
+                return;
+            }
+            const data = await res.json();
+            
+            // Only update the code if it has changed
+            if (data.code !== lastCode) {
+                document.getElementById('totpCode').textContent = data.code;
+                lastCode = data.code;
+            }
+            
+            // Always update the timer
+            document.getElementById('totpTimer').textContent = `Expires in: ${data.remaining}s`;
+        } catch (error) {
+            console.error('Error fetching TOTP:', error);
+        }
+    }
+    
+    await updateCode();
+    currentInterval = setInterval(updateCode, 1000);
+}
+
+async function addService() {
+    const service = document.getElementById('newService').value.trim();
+    const secret = document.getElementById('newSecret').value.trim();
+    const msg = document.getElementById('addMessage');
+    
+    if (!service || !secret) {
+        msg.className = 'error';
+        msg.textContent = 'Please fill in both fields';
+        return;
+    }
+    
+    const res = await fetch('/api/secrets', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({service, secret})
+    });
+    
+    if (res.ok) {
+        msg.className = 'success';
+        msg.textContent = 'Service added successfully!';
+        document.getElementById('newService').value = '';
+        document.getElementById('newSecret').value = '';
+        loadServices();
+        setTimeout(() => msg.textContent = '', 3000);
+    } else {
+        const data = await res.json();
+        msg.className = 'error';
+        msg.textContent = data.error;
+    }
+}
+
+async function deleteService(service) {
+    if (!confirm(`Delete ${service}?`)) return;
+    
+    await fetch(`/api/secrets/${encodeURIComponent(service)}`, {method: 'DELETE'});
+    loadServices();
+}
+
+async function logout() {
+    await fetch('/api/logout', {method: 'POST'});
+    window.location.href = '/';
+}
+
+loadServices();
+</script>
+{% endblock %}
