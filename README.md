@@ -1,19 +1,15 @@
-Hereâ€™s a clean, professional `README.md` you can use for your TOTPVault project:
-
----
-
 # TOTPVault â€” Secure TOTP Authenticator
 
 A self-hosted, password-protected TOTP (Time-Based One-Time Password) authenticator built with Python and Flask. Store and generate 2FA codes locally â€” no cloud dependency, no third-party apps.
 
 ## Features
 
-- í ½í´ Master password encryption using PBKDF2-HMAC-SHA256
-- í ½í´’ TOTP secrets encrypted with Fernet (AES-128-CBC)
-- í ½í¶¥ï¸ Web UI for adding, viewing, and deleting services
-- â±ï¸ Real-time TOTP code generator with countdown timer
-- í ½í³ Data stored locally in `/data` (config.json + secrets.enc)
-- í ½í°³ Docker-ready with compose support
+-  Master password encryption using PBKDF2-HMAC-SHA256
+-  TOTP secrets encrypted with Fernet (AES-128-CBC)
+-  Web UI for adding, viewing, and deleting services
+-  Real-time TOTP code generator with countdown timer
+-  Data stored locally in `/data` (config.json + secrets.enc)
+-  Docker-ready with compose support
 
 ## Installation
 
@@ -30,28 +26,14 @@ A self-hosted, password-protected TOTP (Time-Based One-Time Password) authentica
    cd TOTPVault
    ```
 
-2. Install dependencies:
+2. Build and run the container:
    ```bash
-   pip install -r requirements.txt
+   docker compose up --build
    ```
 
-3. Run the app:
-   ```bash
-   python app.py
-   ```
+3. Access the app at [http://localhost:5002](http://localhost:5002)
 
-4. Open [http://localhost:5002](http://localhost:5002) in your browser and set up your master password.
-
-### Docker Setup
-
-1. Build and run the container:
-   ```bash
-   docker-compose up --build
-   ```
-
-2. Access the app at [http://localhost:5002](http://localhost:5002)
-
-> í ½í²¡ The `data/` directory is mounted as a volume, so your secrets persist between restarts.
+>  The `data/` directory is mounted as a volume, so your secrets persist between restarts.
 
 ## Security Notes
 
